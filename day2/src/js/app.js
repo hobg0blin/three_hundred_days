@@ -1,6 +1,6 @@
 import Config from './data/config';
 import Detector from './utils/detector';
-import * as APP from './app/main';
+import Eye from './app/main';
 
 // Styles
 import './../css/app.scss';
@@ -18,8 +18,8 @@ function init() {
     Detector.addGetWebGLMessage();
   } else {
     const container = document.getElementById('appContainer');
-    APP.cube(container);
-    APP.render(10)
+    let eye = new Eye();
+    eye.render()
   }
 }
 

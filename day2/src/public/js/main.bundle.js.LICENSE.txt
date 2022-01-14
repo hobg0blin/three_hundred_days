@@ -12,6 +12,8 @@
 
 /*! three */
 
+/*! three/examples/jsm/controls/OrbitControls.js */
+
 /*!***********************!*\
   !*** ./src/js/app.js ***!
   \***********************/
