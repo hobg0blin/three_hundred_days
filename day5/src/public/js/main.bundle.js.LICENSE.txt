@@ -1,3 +1,5 @@
+/*! ../utils/ColorGUIHelper.js */
+
 /*! ./../css/app.scss */
 
 /*! ./app/main */
@@ -14,7 +16,7 @@
 
 /*! three */
 
-/*! three/examples/jsm/controls/OrbitControls.js */
+/*! three/examples/jsm/libs/lil-gui.module.min.js */
 
 /*!***********************!*\
   !*** ./src/js/app.js ***!
@@ -35,3 +37,7 @@
 /*!**********************************!*\
   !*** ./src/js/utils/detector.js ***!
   \**********************************/
+
+/*!****************************************!*\
+  !*** ./src/js/utils/ColorGUIHelper.js ***!
+  \****************************************/

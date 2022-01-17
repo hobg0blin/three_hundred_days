@@ -19,7 +19,8 @@ function init() {
   } else {
     const container = document.getElementById('appContainer');
     let ground = new Texture();
-    ground.render()
+    ground.buildFloorMesh()
+    ground.render(20)
   }
 }
 
