@@ -42,33 +42,17 @@ this.scene.add(light);
 //        this.scene.add(cubeObj);
 //        this.camera.lookAt(cubeObj.position)
         // make shape
-//var geometry = new THREE.PlaneBufferGeometry( 2000, 2000, 256, 256 );
-        const depth = 25
-        const width = 100
-        const height = 25
-        const spacingX = 33
-        const spacingY = 33
-        let geometry = new THREE.BufferGeometry();
-        let vertices = []
-        for (let z=0; z < depth; z++) {
-            for (let x = 0; x < width; x++) {
-                let vertex = new THREE.Vector3(x * spacingX, Math.random() * height, z* spacingY)
-                vertices.push(vertex.x)
-                vertices.push(vertex.y)
-        vertices.push(vertex.z)
-
-
-            }
-        }
-        console.log('vertices: ', vertices)
-        let vs = new Float32Array(vertices)
-        console.log('vs: ', vs)
-        geometry.setAttribute('position', new THREE.BufferAttribute(vs, 3))
-var material = new THREE.MeshBasicMaterial({color: 0xfdf754});
+var geometry = new THREE.PlaneBufferGeometry( 2000, 2000, 256, 256 );
+var material = new THREE.MeshLambertMaterial({color: 0x20d651});
 var terrain = new THREE.Mesh( geometry, material );
 terrain.rotation.x = -Math.PI / 2;
 this.scene.add( terrain );
 this.camera.lookAt(terrain)
+var peak = 60;
+var vertices = terrain.geometry.attributes.position.array;
+for (var i = 0; i <= vertices.length; i += 4) {
+    vertices[i+2] = peak * Math.random();
+}
 terrain.geometry.attributes.position.needsUpdate = true;
 terrain.geometry.computeVertexNormals();
         this.render = this.render.bind(this) //bind to class instead of window object
