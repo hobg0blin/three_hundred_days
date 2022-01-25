@@ -1,0 +1,2 @@
+/*! For license information please see styles.bundle.js.LICENSE.txt */
+(self.webpackChunkthreejs_es6_webpack_boilerplate=self.webpackChunkthreejs_es6_webpack_boilerplate||[]).push([["styles"],{"./src/css/assets/main.css":(e,s,a)=>{"use strict";a.r(s)}}]);
