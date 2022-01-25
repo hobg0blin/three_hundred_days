@@ -1,14 +1,12 @@
-/*! ../components/Train/Train.js */
-
 /*! ../components/camera.js */
 
 /*! ../components/controls.js */
 
+/*! ../components/createText.js */
+
 /*! ../components/fog.js */
 
 /*! ../components/lights.js */
-
-/*! ../components/particleSystem.js */
 
 /*! ../components/renderer.js */
 
@@ -19,12 +17,6 @@
 /*! ./app/main */
 
 /*! ./data/config */
-
-/*! ./geometries.js */
-
-/*! ./materials.js */
-
-/*! ./meshes.js */
 
 /*! ./utils/detector */
 
@@ -80,22 +72,6 @@
   !*** ./src/js/utils/ColorGUIHelper.js ***!
   \****************************************/
 
-/*!******************************************!*\
-  !*** ./src/js/components/Train/Train.js ***!
-  \******************************************/
-
-/*!*******************************************!*\
-  !*** ./src/js/components/Train/meshes.js ***!
-  \*******************************************/
-
-/*!*********************************************!*\
-  !*** ./src/js/components/particleSystem.js ***!
-  \*********************************************/
-
-/*!**********************************************!*\
-  !*** ./src/js/components/Train/materials.js ***!
-  \**********************************************/
-
-/*!***********************************************!*\
-  !*** ./src/js/components/Train/geometries.js ***!
-  \***********************************************/
+/*!*****************************************!*\
+  !*** ./src/js/components/createText.js ***!
+  \*****************************************/

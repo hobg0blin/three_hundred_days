@@ -21,6 +21,7 @@ function createParticles(count, color, size, initPosMax, initPosMin) {
   geo.setAttribute('position', new BufferAttribute(new Float32Array(vertices), 3))
   const mat = new PointsMaterial({color: color, size: size})
   const mesh = new Points(geo, mat)
+  //TODO add rotation options?
   function animate(rotationSpd) {
     const pos = []
     particles.forEach(p => {
@@ -36,7 +37,7 @@ function createParticles(count, color, size, initPosMax, initPosMin) {
     })
     geo.setAttribute('position', new BufferAttribute(new Float32Array(pos), 3))
     geo.attributes.position.needsUpdate = true
-    mesh.rotation.y += rotationSpd
+//    mesh.rotation.y += rotationSpd
   }
   return {mesh, animate}
 }

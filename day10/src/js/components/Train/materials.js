@@ -15,9 +15,9 @@ function createMaterials() {
   })
 
   const loader = new TextureLoader()
-  const texture=  loader.load('thomas.png')
-  texture.repeat.set(0.77, 0.77)
-  texture.offset.set(0.12, 0.12)
+  const texture=  loader.load('hank.jpg')
+  texture.repeat.set(0.87, 0.87)
+  texture.offset.set(0.03, 0.03)
   const face = new MeshStandardMaterial({
     map: texture,
     flatShading: true
