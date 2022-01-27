@@ -15,7 +15,7 @@
     "lint": "eslint src/js/",
     "webpack-server": "webpack serve --env NODE_ENV=dev --progress --color --open --hot",
     "webpack-watch": "webpack --env NODE_ENV=dev --progress --color --watch --hot",
-    "dev:js": "npm run watch:css && webpack --env NODE_ENV=dev",
+    "dev:js": "webpack --env NODE_ENV=dev",
     "build:dir": "copyfiles -a -u 2 src/public/assets/**/*.* build/",
     "build:js": "webpack --env NODE_ENV=prod --progress --color",
     "watch:css": "postcss src/css/assets/tailwind.css -o src/css/assets/main.css"
