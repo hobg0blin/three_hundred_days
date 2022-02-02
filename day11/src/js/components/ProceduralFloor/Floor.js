@@ -1,13 +1,13 @@
 import { PlaneBufferGeometry,BufferAttribute, MeshLambertMaterial, Mesh} from 'three'
-function createFloor() {
+function createFloor(options) {
         //texture creation
         // adapted from https://stackoverflow.com/questions/49383791/low-poly-terrain-created-by-modifying-geometry-vertices-is-producing-black-glitc
-        const floor = new PlaneBufferGeometry(20000, 20000, 30, 30)
+        const floor = new PlaneBufferGeometry(options.width, options.height, 30, 30)
         let colors = []
         let randomFloorVertexPos
         for (let i = 0; i < floor.attributes.position.array.length; i++) {
             //let color = new THREE.Color(randomColor({format: 'rgb'}))
-            let range = 400
+            let range = 0.4
             randomFloorVertexPos = Math.floor(Math.random() * ((0) - (-range)) + (-range))
            floor.attributes.position.setZ(i, randomFloorVertexPos)
         }

@@ -40,7 +40,7 @@ class TextForm extends Component {
     return (
       <div className="grid-cols-1 justify-items-center place-items-center items-center">
       <form onSubmit={this.handleSubmit} className="grid place-items-center justify-items-center text-xl border-solid border-black w-full">
-            <input className="flex grow border-black w-1/2 block bg-white border border-slate-300 rounded-md py-2 pl-9 pr-3 shadow-sm focus:outline-none focus:border-sky-500 focus:ring-sky-500 focus:ring-1 text-center bg-green-400" type="text" value={this.props.value} onChange={this.handleTextChange} />
+            <input className="flex grow border-black w-1/2 block  border border-slate-300 rounded-md py-2 pl-9 pr-3 shadow-sm focus:outline-none focus:border-sky-500 focus:ring-sky-500 focus:ring-1 text-center bg-blue-400" type="text" value={this.props.value} onChange={this.handleTextChange} />
       </form>
         <FontSelector fonts={fonts} onChange={this.handleFontChange} />
       </div>

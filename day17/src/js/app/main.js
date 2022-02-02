@@ -13,6 +13,8 @@ import { createParticles } from '../components/Three/particleSystem.js'
 import helvetiker from 'three/examples/fonts/helvetiker_regular.typeface.json'
 
 const clock = new THREE.Clock()
+//FIXME: global variable for juddering crab - BAD BAD BAD but had to get it to work somehow
+let doJudder = false
 
 // This class instantiates and ties all of the components together, starts the loading process and renders the main loop
 export default class Texture {
@@ -50,6 +52,8 @@ export default class Texture {
 //        this.camera.lookAt(text)
         this.beginCrabMode = this.beginCrabMode.bind(this)
         this.beginCrabMode()
+        this.defaultPos = new THREE.BufferAttribute()
+        this.judder = this.judder.bind(this)
         this.render = this.render.bind(this) //bind to class instead of window object
 
     }
@@ -62,35 +66,42 @@ export default class Texture {
             if (this.crabs === undefined) {
                 this.crabs = []
             }
-                this.crabs.push(crab)
-                this.scene.add(crab)
+            console.log('default pos: ', crab.geometry.attributes.position)
+            this.crabs.push(crab)
+            this.scene.add(crab)
+            this.defaultPos = crab.geometry.attributes.position.clone()
         })
-
-        window.onload  = () => {
-            console.log('midi')
-            console.log(navigator.requestMIDIAccess)
+//        let judder = this.doJudder
             navigator.requestMIDIAccess().then((midi) => {
                 for (let input of midi.inputs) {
                     console.log('input:', input)
                 }
-                startLoggingMIDIInput(midi)
+                startLoggingMIDIInput(midi, this.doJudder)
                 console.log('midi supported')}
 
             )}
-        function onMIDIMessage( event ) {
-            if (event.data[0] <= 144) {
-            console.log('midi: ', event.data)
-            judder(myCrab.geometry)
-        }
-        }
+        function onMIDIMessage( event) {
+            if (event.data[0] == 144 && event.data[2] > 0 ) {
+                console.log('note on: ', event.data)
+                doJudder = true
+                // judder(myCrab.geometry)
+            }
+            if (event.data[2] == 0) {
+                console.log('note off: ', event.data)
+                doJudder = false
+//                myCrab.geometry.position.set(this.defaultCrabPos)
+            }
+//            console.log('event: ', event.data)
+           }
 
-    function startLoggingMIDIInput( midiAccess) {
+    function startLoggingMIDIInput( midiAccess, judder) {
         for (var input of midiAccess.inputs.values()) {
         input.onmidimessage = onMIDIMessage;
+        judder = input.onmidimessage
+        }
         }
     }
-
-    function judder(shape) {
+    judder(shape) {
         console.log('shape: ', shape)
         let range = 10
         for (let i = Math.round(Math.random() * 3); i < shape.attributes.position.array.length; i+=3) {
@@ -101,10 +112,6 @@ export default class Texture {
         }
             shape.attributes.position.needsUpdate = true
         console.log('changed shape: ', shape)
-
-
-    }
-}
 
     }
     updateText(input = {font: undefined, value: undefined}) {
@@ -133,8 +140,23 @@ export default class Texture {
         const xSpd = time * 0.15
         //TODO: update to proper animation loop per https://discoverthreejs.com/book/first-steps/animation-loop/#timing-in-the-animation-system
         if (this.crabs !== undefined && (Math.round(clock.getElapsedTime()*100)*10) % 100 == 0 ) {
-            console.log('add crab')
     }
+        if (this.crabs !== undefined) {
+        if (doJudder) {
+            console.log('should be juddering')
+            this.judder(this.crabs[0].geometry)
+            console.log('crab pos: ', this.crabs[0].geometry.attributes.position == this.defaultCrabPos)
+        }
+        if (!doJudder && !isNaN(this.crabs[0].geometry.attributes.position.array[0]) &&  this.crabs[0].geometry.attributes.position != this.defaultPos){
+            //FIXME: this always fires when not pressing key for some reason
+            console.log('foo')
+
+
+           this.crabs[0].geometry.attributes.position.array.set(this.defaultPos.array)
+            this.crabs[0].geometry.attributes.position.needsUpdate = true
+
+            }
+        }
         //console.log('camera pos: ', this.camera.position)
 //        this.text.material.needsUpdate = true
 //        this.train.rotation.y += xSpd
