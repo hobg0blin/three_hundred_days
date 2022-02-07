@@ -102,8 +102,8 @@ export default class Texture {
 //        this.scene.add(ground)
         // shapes & textures
         //        this.camera.lookAt(this.keyboard[18])
-        let groundMesh = createFloor({width: 1000, height: 1000, segments: 15, range: 20})
-        groundMesh.position.y = 25
+        let groundMesh = createFloor({width: 540, height: 500, segments: 15, range: 65})
+//        groundMesh.position.y = 25
         this.scene.add(groundMesh)
  //       this.camera.lookAt(groundMesh)
         const textureLoader = new THREE.TextureLoader()
@@ -112,15 +112,15 @@ export default class Texture {
         const normalMap1 = textureLoader.load('textures/Water_2_M_Normal.jpg')
 
 
-        const waterGeo = new THREE.PlaneGeometry(1000, 400)
+        const waterGeo = new THREE.SphereGeometry(510, 30)
         let water = new Water(waterGeo, {scale: 2, textureWidth: 1024, textureHeight: 1024, flowMap: flowMap, normalMap0: normalMap0, normalMap1: normalMap1, flowDirection: new THREE.Vector2(1, 1), color: '#ffffff'})
-            water.position.y = 15
-            water.rotation.x = Math.PI * -0.5
-        let waterBase = new THREE.PlaneGeometry(1000, 400)
+//            water.position.y = 15
+//            water.rotation.x = Math.PI * -0.5
+        let waterBase = new THREE.SphereGeometry(500, 40)
         let waterMat = new THREE.MeshPhongMaterial({color: 0x91e4ff, transparent : true, opacity:0.9})
         let waterBaseMesh = new THREE.Mesh(waterBase, waterMat)
-        waterBaseMesh.position.y = 14.9
-            waterBaseMesh.rotation.x = Math.PI * -0.5
+//        waterBaseMesh.position.y = 14.9
+ //           waterBaseMesh.rotation.x = Math.PI * -0.5
         this.scene.add(water, waterBaseMesh)
     water.receiveShadow = true
     waterBaseMesh.receiveShadow = true
@@ -152,7 +152,7 @@ export default class Texture {
     //          this.camera.position.z -= xSpd
           //    this.camera.rotation.y += xSpd
     //        this.text.rotation.x += xSpd
-            this.controls.update()
+//            this.controls.update()
             this.renderer.render(this.scene, this.camera)
         })
     }

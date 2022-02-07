@@ -3,7 +3,7 @@ import { Vector3, PMREMGenerator } from 'three'
 // from https://www.liquid.fish/current/threejs
 function createSun(scene, renderer) {
   const sky = new Sky()
-  sky.scale.setScalar(1000)
+  sky.scale.setScalar(2000)
   scene.add(sky)
   const pmremGenerator = new PMREMGenerator(renderer);
   const sun = new Vector3();
