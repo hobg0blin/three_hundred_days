@@ -70,7 +70,8 @@ export default class Texture {
         let colors = []
         let randomFloorVertexPos
         for (let i = 0; i < this.floor.attributes.position.array.length; i++) {
-            //let color = new THREE.Color(randomColor({format: 'rgb'}))
+            let color = new THREE.Color(randomColor({format: 'rgb'}))
+          colors.push(color)
             let range = 400
             randomFloorVertexPos = Math.floor(Math.random() * ((0) - (-range)) + (-range))
            this.floor.attributes.position.setZ(i, randomFloorVertexPos)
@@ -81,7 +82,7 @@ export default class Texture {
         this.floor.attributes.color.needsUpdate = true
         this.floor.computeVertexNormals()
 
-        let floorMaterial = new THREE.MeshLambertMaterial({ color: 0xfcba03/* for multicolor: vertexColors: true */})
+        let floorMaterial = new THREE.MeshLambertMaterial({vertexColors: true})
        // floorMaterial.flatShading = true;
         this.floorMesh = new THREE.Mesh(this.floor, floorMaterial)
         this.floorMesh.receiveShadow = true
