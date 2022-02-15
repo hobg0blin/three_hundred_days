@@ -80,7 +80,7 @@ export default class Texture {
 //             model.rotation.z = THREE.Math.degToRadk()
             model.scale.set(0.07, 0.07,0.07)
              this.mixer = new THREE.AnimationMixer(model)
-             this.anim = this.mixer.clipAction(model.animations[0])
+             this.anim = this.mixer.clipAction(model.animations[1])
 //           this.anim.setLoop(THREE.LoopOnce)
  //          this.anim.clampWhenFinished = true
             this.anim.play()
