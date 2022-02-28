@@ -1,0 +1,87 @@
+/*! ../../utils/ColorGUIHelper.js */
+
+/*! ../components/Three/camera.js */
+
+/*! ../components/Three/controls.js */
+
+/*! ../components/Three/createText.js */
+
+/*! ../components/Three/fog.js */
+
+/*! ../components/Three/lights.js */
+
+/*! ../components/Three/renderer.js */
+
+/*! ../css/main.css */
+
+/*! ./app/main */
+
+/*! ./components/React/TextForm */
+
+/*! ./data/config */
+
+/*! ./utils/detector */
+
+/*! @tweenjs/tween.js */
+
+/*! randomcolor */
+
+/*! react */
+
+/*! react-dom */
+
+/*! three */
+
+/*! three/examples/fonts/helvetiker_regular.typeface.json */
+
+/*! three/examples/jsm/controls/OrbitControls.js */
+
+/*! three/examples/jsm/libs/lil-gui.module.min.js */
+
+/*!***********************!*\
+  !*** ./src/js/app.js ***!
+  \***********************/
+
+/*!****************************!*\
+  !*** ./src/js/app/main.js ***!
+  \****************************/
+
+/*!*******************************!*\
+  !*** ./src/js/data/config.js ***!
+  \*******************************/
+
+/*!**********************************!*\
+  !*** ./src/js/utils/detector.js ***!
+  \**********************************/
+
+/*!****************************************!*\
+  !*** ./src/js/components/Three/fog.js ***!
+  \****************************************/
+
+/*!****************************************!*\
+  !*** ./src/js/utils/ColorGUIHelper.js ***!
+  \****************************************/
+
+/*!*******************************************!*\
+  !*** ./src/js/components/Three/camera.js ***!
+  \*******************************************/
+
+/*!*******************************************!*\
+  !*** ./src/js/components/Three/lights.js ***!
+  \*******************************************/
+
+/*!*********************************************!*\
+  !*** ./src/js/components/React/TextForm.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./src/js/components/Three/controls.js ***!
+  \*********************************************/
+
+/*!*********************************************!*\
+  !*** ./src/js/components/Three/renderer.js ***!
+  \*********************************************/
+
+/*!***********************************************!*\
+  !*** ./src/js/components/Three/createText.js ***!
+  \***********************************************/
