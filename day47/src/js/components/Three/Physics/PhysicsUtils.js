@@ -119,7 +119,7 @@ groundShape = createTerrainShape();
 							Math.pow( ( i - w2 ) / widthMod, 2.0 ) +
 								Math.pow( ( j - d2 ) / depthMod, 2.0 ) );
 
-						const height = ( Math.sin( radius * phaseMult ) + 1 ) * 0.5 * hRange + minHeight;
+						const height = ( Math.sin( radius * phaseMult ) + 1 ) * 0.9 * hRange + minHeight;
 
 						data[ p ] = height;
 
@@ -222,12 +222,12 @@ groundShape = createTerrainShape();
 
 				scene.add( terrainMesh );
 
-				textureLoader.load( 'textures/colors.png', function ( texture ) {
+				textureLoader.load( 'textures/golfball.jpg', function ( texture ) {
 
 					texture.wrapS = RepeatWrapping;
 					texture.wrapT = RepeatWrapping;
 					//texture.repeat.set( terrainWidth - 1, terrainDepth - 1 );
-					texture.repeat.set(20, 20);
+					texture.repeat.set(4, 4);
 
 					groundMaterial.map = texture;
 					groundMaterial.needsUpdate = true;
@@ -242,7 +242,7 @@ groundShape = createTerrainShape();
 				const volumeMass = 12;
 
 				const sphereGeometry = new SphereGeometry( 2.5, 40, 25 );
-				sphereGeometry.translate( 0, 25, 0 );
+				sphereGeometry.translate( -45, 25, 0 );
 				createSoftVolume( sphereGeometry, volumeMass, 350 );
 
 				// Ramp
@@ -489,9 +489,9 @@ const obstacleShape = new Ammo.btSphereShape(obstacleRadius)
 
 			function updatePhysics( deltaTime, elapsedTime ) {
 				let newTime = Math.round((elapsedTime))
-					depthMod+=0.01*posNeg
+					depthMod+=0.05*posNeg
 					widthMod-=0.01*posNeg
-						phaseMult -= .01*posNeg
+						phaseMult -= .1
 				if (newTime % 1 == 0 && newTime != oldTime) {
 					console.log('elapsed time: ', Math.round(elapsedTime))
 				oldTime = newTime
@@ -503,9 +503,6 @@ const obstacleShape = new Ammo.btSphereShape(obstacleRadius)
 								} else {
 					inc = 3
 				}
-				physicsWorld.removeRigidBody(groundBody)
-					groundBody.setCollisionShape(createTerrainShape())
-					physicsWorld.addRigidBody(groundBody)
 
 				}
 			terrainMaxHeight -= 0.02*posNeg
@@ -513,6 +510,9 @@ const obstacleShape = new Ammo.btSphereShape(obstacleRadius)
 				heightData = generateHeight( terrainWidth, terrainDepth, terrainMinHeight, terrainMaxHeight );
 
 				updateVertices()
+				physicsWorld.removeRigidBody(groundBody)
+					groundBody.setCollisionShape(createTerrainShape())
+					physicsWorld.addRigidBody(groundBody)
 
 
 				// Step world
