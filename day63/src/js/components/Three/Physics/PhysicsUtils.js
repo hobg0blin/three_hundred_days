@@ -1,0 +1,882 @@
+import {MathUtils, ConeGeometry, BoxGeometry, Box3, PlaneGeometry, BufferGeometry, SphereGeometry, Mesh, Vector2, Vector3, MeshPhongMaterial, MeshLambertMaterial, RepeatWrapping, Quaternion, TextureLoader} from 'three'
+let crab = null
+import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js'
+
+import {ConvexObjectBreaker} from 'three/examples/jsm/misc/ConvexObjectBreaker.js'
+import {Water} from 'three/examples/jsm/objects/Water2.js'
+import { importFBXModel } from '../importFBXModel.js'
+import {ConvexGeometry} from 'three/examples/jsm/geometries/ConvexGeometry.js'
+//code from https://github.com/mrdoob/three.js/blob/dev/examples/physics_ammo_break.html
+			// Graphics variables
+			let container, stats;
+			let camera, controls, scene, renderer;
+			let raycaster
+			let textureLoader;
+			let terrainMesh;
+			let oldTime = 0
+			let posNeg = 1
+			let incMax = 0.1
+			let incMin = 0.1
+			let clickRequest = false;
+			const mouseCoords = new Vector2();
+
+			const ballMaterial = new MeshPhongMaterial( { color: 0x202020 } );
+			const pos = new Vector3();
+			const quat = new Quaternion();
+
+			// Heightfield parameters
+			const terrainWidthExtents = 100;
+			const terrainDepthExtents = 100;
+			const terrainWidth = 128;
+			const terrainDepth = 128;
+			const terrainHalfWidth = terrainWidth / 2;
+			const terrainHalfDepth = terrainDepth / 2;
+			let terrainMaxHeight = 1;
+			let terrainMinHeight = -1;
+		//Physics
+		let groundBody
+		let groundShape
+		let groundMotionState
+		let groundTransform
+		let groundMass
+		let groundLocalInertia
+		const objectsToRemove = [];
+
+		for ( let i = 0; i < 500; i ++ ) {
+
+			objectsToRemove[ i ] = null;
+
+		}
+
+		let numObjectsToRemove = 0;
+		const impactPoint = new Vector3();
+		const impactNormal = new Vector3();
+
+const convexBreaker = new ConvexObjectBreaker
+let tempBtVec3_1;
+const geometry = new PlaneGeometry( terrainWidthExtents, terrainDepthExtents, terrainWidth - 1, terrainDepth - 1 );
+//movement
+let modelObject = null
+let moveDirection = { left: 0, right: 0, forward: 0, back: 0 }
+
+			let heightData = null;
+			let ammoHeightData = null;
+
+			// Physics variables
+			const gravityConstant = -98;
+			let physicsWorld;
+			const rigidBodies = [];
+			const softBodies = [];
+			const margin = 0.05;
+			let transformAux1;
+			let softBodyHelpers;
+			let start = 0
+			let inc = 3
+			let depthMod = 222
+			let widthMod = 222
+			let phaseMult = 3.5
+			let dispatcher
+
+
+			function initPhysics() {
+			scene = this.scene
+				camera = this.camera
+				raycaster = this.raycaster
+				renderer = this.renderer
+			textureLoader = new TextureLoader()
+//				geometry.rotateY( - Math.PI / 2 );
+//				createTerrain()
+				// Physics configuration
+
+				const collisionConfiguration = new Ammo.btSoftBodyRigidBodyCollisionConfiguration();
+				dispatcher = new Ammo.btCollisionDispatcher( collisionConfiguration );
+				const broadphase = new Ammo.btDbvtBroadphase();
+				const solver = new Ammo.btSequentialImpulseConstraintSolver();
+//				const softBodySolver = new Ammo.btDefaultSoftBodySolver();
+				physicsWorld = new Ammo.btDiscreteDynamicsWorld( dispatcher, broadphase, solver, collisionConfiguration);
+				physicsWorld.setGravity( new Ammo.btVector3( 0, gravityConstant, 0 ) );
+//				physicsWorld.getWorldInfo().set_m_gravity( new Ammo.btVector3( 0, gravityConstant, 0 ) );
+
+				transformAux1 = new Ammo.btTransform();
+//				softBodyHelpers = new Ammo.btSoftBodyHelpers();
+				// ground
+
+			tempBtVec3_1 = new Ammo.btVector3( 0, 0, 0 );
+			}
+
+
+			function generateHeight( width, depth, minHeight, maxHeight ) {
+
+				// Generates the height data (a sinus wave)
+
+				const size = width * depth;
+				const data = new Float32Array( size );
+
+				const hRange = maxHeight - minHeight;
+				// good setting: w2: 2, d2: 6, phaseMult: 9, pow: 1.5, height: cos
+				const w2 = width / widthMod;
+				const d2 = depth / depthMod;
+				;
+
+				let p = 0;
+
+				for ( let j = 0; j < depth; j ++ ) {
+
+					for ( let i = 0; i < width; i ++ ) {
+
+						const radius = Math.sqrt(
+							Math.pow( ( i - w2 ) / w2, 2.0 ) +
+								Math.pow( ( j - d2 ) / d2, 2.0 ) );
+
+						const height = ( Math.sin( radius * phaseMult ) + 1 ) * 0.5 * hRange + minHeight;
+
+						data[ p ] = height;
+
+						p ++;
+
+					}
+
+				}
+				return data;
+
+			}
+
+			function createTerrainShape() {
+
+				// This parameter is not really used, since we are using PHY_FLOAT height data type and hence it is ignored
+				const heightScale = 1;
+
+				// Up axis = 0 for X, 1 for Y, 2 for Z. Normally 1 = Y is used.
+				const upAxis = 1;
+
+				// hdt, height data type. "PHY_FLOAT" is used. Possible values are "PHY_FLOAT", "PHY_UCHAR", "PHY_SHORT"
+				const hdt = 'PHY_FLOAT';
+
+				// Set this to your needs (inverts the triangles)
+				const flipQuadEdges = false;
+
+				// Creates height data buffer in Ammo heap
+				ammoHeightData = Ammo._malloc( 4 * terrainWidth * terrainDepth );
+
+				// Copy the javascript height data array to the Ammo one.
+				let p = 0;
+				let p2 = 0;
+
+				for ( let j = 0; j < terrainDepth; j ++ ) {
+
+					for ( let i = 0; i < terrainWidth; i ++ ) {
+
+						// write 32-bit float data to memory
+						Ammo.HEAPF32[ ammoHeightData + p2 >> 2 ] = heightData[ p ];
+
+						p ++;
+
+						// 4 bytes/float
+						p2 += 4;
+
+					}
+
+				}
+
+				// Creates the heightfield physics shape
+				const heightFieldShape = new Ammo.btHeightfieldTerrainShape(
+					terrainWidth,
+					terrainDepth,
+					ammoHeightData,
+					heightScale,
+					terrainMinHeight,
+					terrainMaxHeight,
+					upAxis,
+					hdt,
+					flipQuadEdges
+				);
+
+				// Set horizontal scale
+				const scaleX = terrainWidthExtents / ( terrainWidth - 1 );
+				const scaleZ = terrainDepthExtents / ( terrainDepth - 1 );
+				heightFieldShape.setLocalScaling( new Ammo.btVector3( scaleX, 1, scaleZ ) );
+
+				heightFieldShape.setMargin( 0.05 );
+
+				return heightFieldShape;
+
+			}
+			function updateVertices(){
+				let vertices = geometry.attributes.position.array;
+				if (start >= vertices.length) {
+					start = 0
+				} else {
+					start+=3
+				}
+
+
+				for ( let i = 0, j = 0, l = vertices.length; i < l; i ++, j += inc ) {
+
+					// j + 1 because it is the y component that we modify
+					vertices[ j + 1 ] = heightData[ i];
+
+				}
+				geometry.attributes.position.needsUpdate = true
+				geometry.computeVertexNormals();
+
+			}
+			function createTerrain() {
+
+		const groundMaterial = new MeshLambertMaterial( { color: 0xC7C7C7 } );
+				updateVertices()
+				terrainMesh = new Mesh( geometry, groundMaterial );
+				terrainMesh.receiveShadow = true;
+				terrainMesh.castShadow = true;
+
+				scene.add( terrainMesh );
+
+				textureLoader.load( 'textures/colors.png', function ( texture ) {
+
+					texture.wrapS = RepeatWrapping;
+					texture.wrapT = RepeatWrapping;
+					//texture.repeat.set( terrainWidth - 1, terrainDepth - 1 );
+					texture.repeat.set(2, 2);
+//					texture.offset.set(0, 1.2)
+
+					groundMaterial.map = texture;
+					groundMaterial.needsUpdate = true;
+
+			})
+			}
+			function createObject( mesh, mass, pos, quat) {
+
+				mesh.position.copy( pos );
+				console.log('mesh position: ', mesh.position)
+				mesh.rotation.y = MathUtils.degToRad(Math.random() * 180)
+				mesh.quaternion.copy( quat );
+				convexBreaker.prepareBreakableObject( mesh, mass, new Vector3(), new Vector3(), true );
+				createDebrisFromBreakableObject( mesh );
+
+			}
+
+			function createObjects() {
+
+				// Ground
+				pos.set( 0, - 0.5, 0 );
+				quat.set( 0, 0, 0, 1 );
+				const ground = createParalellepipedWithPhysics( 60, 1, 60, 0, pos, quat, new MeshPhongMaterial( { color: 0xFFFFFF } ) );
+				ground.receiveShadow = true;
+				textureLoader.load( 'textures/grid.png', function ( texture ) {
+				texture.wrapS = RepeatWrapping;
+				texture.wrapT = RepeatWrapping;
+				texture.repeat.set( 40, 40 );
+				ground.material.map = texture;
+				ground.material.needsUpdate = true;
+
+			} );
+			const objMass = 120;
+
+			//Breakables
+				for (let object of this.physicsObjects) {
+					pos.set(Math.random()* 4, Math.random() * 4, Math.random() * 4)
+					createObject(object, objMass, pos, quat)
+
+				}
+
+			}
+
+			function processGeometry( bufGeometry ) {
+
+				// Ony consider the position values when merging the vertices
+				const posOnlyBufGeometry = new BufferGeometry();
+				posOnlyBufGeometry.setAttribute( 'position', bufGeometry.getAttribute( 'position' ) );
+				posOnlyBufGeometry.setIndex( bufGeometry.getIndex() );
+
+				// Merge the vertices so the triangle soup is converted to indexed triangles
+				const indexedBufferGeom = BufferGeometryUtils.mergeVertices( posOnlyBufGeometry );
+
+				// Create index arrays mapping the indexed vertices to bufGeometry vertices
+				mapIndices( bufGeometry, indexedBufferGeom );
+
+			}
+
+			function isEqual( x1, y1, z1, x2, y2, z2 ) {
+
+				const delta = 0.000001;
+				return Math.abs( x2 - x1 ) < delta &&
+						Math.abs( y2 - y1 ) < delta &&
+						Math.abs( z2 - z1 ) < delta;
+
+			}
+
+			function mapIndices( bufGeometry, indexedBufferGeom ) {
+
+				// Creates ammoVertices, ammoIndices and ammoIndexAssociation in bufGeometry
+
+				const vertices = bufGeometry.attributes.position.array;
+				const idxVertices = indexedBufferGeom.attributes.position.array;
+				const indices = indexedBufferGeom.index.array;
+
+				const numIdxVertices = idxVertices.length / 3;
+				const numVertices = vertices.length / 3;
+
+				bufGeometry.ammoVertices = idxVertices;
+				bufGeometry.ammoIndices = indices;
+				bufGeometry.ammoIndexAssociation = [];
+
+				for ( let i = 0; i < numIdxVertices; i ++ ) {
+
+					const association = [];
+					bufGeometry.ammoIndexAssociation.push( association );
+
+					const i3 = i * 3;
+
+					for ( let j = 0; j < numVertices; j ++ ) {
+
+						const j3 = j * 3;
+						if ( isEqual( idxVertices[ i3 ], idxVertices[ i3 + 1 ], idxVertices[ i3 + 2 ],
+							vertices[ j3 ], vertices[ j3 + 1 ], vertices[ j3 + 2 ] ) ) {
+
+							association.push( j3 );
+
+						}
+
+					}
+
+				}
+
+			}
+
+			function createSoftVolume( bufferGeom, mass, pressure ) {
+
+				processGeometry( bufferGeom);
+        const flowMap = textureLoader.load('textures/Water_1_M_Flow.jpg')
+        const normalMap0 = textureLoader.load('textures/Water_1_M_Normal.jpg')
+        const normalMap1 = textureLoader.load('textures/Water_2_M_Normal.jpg')
+
+
+
+				const volume = new Mesh( bufferGeom,  new MeshPhongMaterial());
+//				volume.rotation.x = MathUtils.degToRad(-45)
+				camera.target = volume
+				volume.castShadow = true;
+				volume.receiveShadow = true;
+				volume.frustumCulled = false;
+				scene.add( volume );
+
+				textureLoader.load( 'textures/colors.png', function ( texture ) {
+					texture.offset.set(0, -0.55, 0)
+
+					texture.repeat.set(1.9, 1.9, 1.9)
+
+					volume.material.map = texture;
+					volume.material.needsUpdate = true;
+
+				} );
+
+				// Volume physic object
+
+				const volumeSoftBody = softBodyHelpers.CreateFromTriMesh(
+					physicsWorld.getWorldInfo(),
+					bufferGeom.ammoVertices,
+					bufferGeom.ammoIndices,
+					bufferGeom.ammoIndices.length / 3,
+					true );
+
+				const sbConfig = volumeSoftBody.get_m_cfg();
+				sbConfig.set_viterations( 40 );
+				sbConfig.set_piterations( 40 );
+
+				// Soft-soft and soft-rigid collisions
+				sbConfig.set_collisions( 0x11 );
+
+				// Friction
+				sbConfig.set_kDF( 0.001 );
+				// Damping
+				sbConfig.set_kDP( 0.01 );
+				// Pressure
+				sbConfig.set_kPR( pressure );
+				// Stiffness
+				volumeSoftBody.get_m_materials().at( 0 ).set_m_kLST( 0.9 );
+				volumeSoftBody.get_m_materials().at( 0 ).set_m_kAST( 0.9 );
+
+				volumeSoftBody.setTotalMass( mass, false );
+				Ammo.castObject( volumeSoftBody, Ammo.btCollisionObject ).getCollisionShape().setMargin( margin );
+				physicsWorld.addSoftBody( volumeSoftBody, 1, - 1 );
+				volume.userData.physicsBody = volumeSoftBody;
+				// Disable deactivation
+				volumeSoftBody.setActivationState( 4 );
+
+				softBodies.push( volume );
+
+			}
+
+			function createParalellepiped( sx, sy, sz, mass, pos, quat, material ) {
+
+				const threeObject = new Mesh( new BoxGeometry( sx, sy, sz, 1, 1, 1 ), material );
+				const shape = new Ammo.btBoxShape( new Ammo.btVector3( sx * 0.5, sy * 0.5, sz * 0.5 ) );
+				shape.setMargin( margin );
+
+				createRigidBody( threeObject, shape, mass, pos, quat );
+
+				return threeObject;
+
+			}
+
+		function createParalellepipedWithPhysics( sx, sy, sz, mass, pos, quat, material ) {
+
+			const object = new Mesh( new BoxGeometry( sx, sy, sz, 1, 1, 1 ), material );
+			const shape = new Ammo.btBoxShape( new Ammo.btVector3( sx * 0.5, sy * 0.5, sz * 0.5 ) );
+			shape.setMargin( margin );
+
+			createRigidBody( object, shape, mass, pos, quat );
+
+			return object;
+
+		}
+
+		function createRigidBody( object, physicsShape, mass, pos, quat, vel, angVel ) {
+
+			if ( pos ) {
+
+				object.position.copy( pos );
+
+			} else {
+
+				pos = object.position;
+
+			}
+
+			console.log('pos: ', pos)
+			if ( quat ) {
+
+				object.quaternion.copy( quat );
+
+			} else {
+
+				quat = object.quaternion;
+
+			}
+
+			const transform = new Ammo.btTransform();
+			transform.setIdentity();
+			transform.setOrigin( new Ammo.btVector3( pos.x, pos.y, pos.z ) );
+			transform.setRotation( new Ammo.btQuaternion( quat.x, quat.y, quat.z, quat.w ) );
+			const motionState = new Ammo.btDefaultMotionState( transform );
+
+			const localInertia = new Ammo.btVector3( 0, 0, 0 );
+			physicsShape.calculateLocalInertia( mass, localInertia );
+
+			const rbInfo = new Ammo.btRigidBodyConstructionInfo( mass, motionState, physicsShape, localInertia );
+			const body = new Ammo.btRigidBody( rbInfo );
+
+			body.setFriction( 0.5 );
+
+			if ( vel ) {
+
+				body.setLinearVelocity( new Ammo.btVector3( vel.x, vel.y, vel.z ) );
+
+			}
+
+			if ( angVel ) {
+
+				body.setAngularVelocity( new Ammo.btVector3( angVel.x, angVel.y, angVel.z ) );
+
+			}
+
+			object.userData.physicsBody = body;
+			object.userData.collided = false;
+
+			scene.add( object );
+
+			if ( mass > 0 ) {
+
+				rigidBodies.push( object );
+
+				// Disable deactivation
+				body.setActivationState( 4 );
+
+			}
+
+		physicsWorld.addRigidBody( body );
+
+			return body;
+
+		}
+
+			function initInput() {
+			setupEventHandlers()
+			window.addEventListener( 'pointerdown', function ( event ) {
+				clickRequest = true
+
+				mouseCoords.set(
+					( event.clientX / window.innerWidth ) * 2 - 1,
+					- ( event.clientY / window.innerHeight ) * 2 + 1
+				);
+
+							} );
+
+			}
+
+			function processClick() {
+				console.log('click request: ', clickRequest)
+
+				if ( clickRequest ) {
+
+					raycaster.setFromCamera( mouseCoords, camera );
+
+					// Creates a ball
+					const ballMass = 10;
+					const ballRadius = 0.4;
+
+					const ball = new Mesh( new SphereGeometry( ballRadius, 18, 16 ), ballMaterial );
+					ball.castShadow = true;
+					ball.receiveShadow = true;
+					const ballShape = new Ammo.btSphereShape( ballRadius );
+					ballShape.setMargin( margin );
+					pos.copy( raycaster.ray.direction );
+					pos.add( raycaster.ray.origin );
+					quat.set( 0, 0, 0, 1 );
+					const ballBody = createRigidBody( ball, ballShape, ballMass, pos, quat );
+					ballBody.setFriction( 0.5 );
+
+					pos.copy( raycaster.ray.direction );
+					pos.multiplyScalar( 200 );
+					ballBody.setLinearVelocity( new Ammo.btVector3( pos.x, pos.y, pos.z ) );
+
+					clickRequest = false;
+
+				}
+
+			}
+
+
+
+
+			function updatePhysics( deltaTime, elapsedTime ) {
+//				moveBall()
+//				if (newTime % 10 == 0) {
+//
+//					incMax = Math.random()
+//					incMin = Math.random()
+//				if (inc < 3) {
+//					inc += 3
+//								} else {
+//					inc = 3
+//				}
+//			terrainMaxHeight -= 0.02*posNeg
+//			terrainMinHeight += 0.02*posNeg
+//
+
+//
+//
+//
+//				physicsWorld.removeCollisionObject(groundBody)
+//					groundBody.setCollisionShape(createTerrainShape())
+//					physicsWorld.addRigidBody(groundBody)
+//
+//				}
+//
+
+
+				// Step world
+				physicsWorld.stepSimulation( deltaTime, 10 );
+
+				// Update soft volumes
+//				for ( let i = 0, il = softBodies.length; i < il; i ++ ) {
+//
+//					const volume = softBodies[ i ];
+//					const geometry = volume.geometry;
+//					const softBody = volume.userData.physicsBody;
+//					const volumePositions = geometry.attributes.position.array;
+//					const volumeNormals = geometry.attributes.normal.array;
+//					const association = geometry.ammoIndexAssociation;
+//					const numVerts = association.length;
+//					const nodes = softBody.get_m_nodes();
+//					for ( let j = 0; j < numVerts; j ++ ) {
+//
+//						const node = nodes.at( j );
+//						const nodePos = node.get_m_x();
+//						const x = nodePos.x();
+//						const y = nodePos.y();
+//						const z = nodePos.z();
+//						const nodeNormal = node.get_m_n();
+//						const nx = nodeNormal.x();
+//						const ny = nodeNormal.y();
+//						const nz = nodeNormal.z();
+//
+//						const assocVertex = association[ j ];
+//
+//						for ( let k = 0, kl = assocVertex.length; k < kl; k ++ ) {
+//
+//							let indexVertex = assocVertex[ k ];
+//							volumePositions[ indexVertex ] = x;
+//							volumeNormals[ indexVertex ] = nx;
+//							indexVertex ++;
+//							volumePositions[ indexVertex ] = y;
+//							volumeNormals[ indexVertex ] = ny;
+//							indexVertex ++;
+//							volumePositions[ indexVertex ] = z;
+//							volumeNormals[ indexVertex ] = nz;
+//
+//						}
+//
+//					}
+//
+//					geometry.attributes.position.needsUpdate = true;
+//					geometry.attributes.normal.needsUpdate = true;
+//
+//				}
+
+				// Update rigid bodies
+			// Update rigid bodies
+			for ( let i = 0, il = rigidBodies.length; i < il; i ++ ) {
+
+				const objThree =rigidBodies[ i ];
+				const objPhys = objThree.userData.physicsBody;
+				const ms = objPhys.getMotionState();
+
+				if ( ms ) {
+
+					ms.getWorldTransform( transformAux1 );
+					const p = transformAux1.getOrigin();
+					const q = transformAux1.getRotation();
+					objThree.position.set( p.x(), p.y(), p.z() );
+					objThree.quaternion.set( q.x(), q.y(), q.z(), q.w() );
+
+					objThree.userData.collided = false;
+
+				}
+
+			}
+
+			for ( let i = 0, il =dispatcher.getNumManifolds(); i < il; i ++ ) {
+
+				const contactManifold =dispatcher.getManifoldByIndexInternal( i );
+				const rb0 = Ammo.castObject( contactManifold.getBody0(), Ammo.btRigidBody );
+				const rb1 = Ammo.castObject( contactManifold.getBody1(), Ammo.btRigidBody );
+
+				const threeObject0 = Ammo.castObject( rb0.getUserPointer(), Ammo.btVector3 ).threeObject;
+				const threeObject1 = Ammo.castObject( rb1.getUserPointer(), Ammo.btVector3 ).threeObject;
+
+				if ( ! threeObject0 && ! threeObject1 ) {
+
+					continue;
+
+				}
+
+				const userData0 = threeObject0 ? threeObject0.userData : null;
+				const userData1 = threeObject1 ? threeObject1.userData : null;
+
+				const breakable0 = userData0 ? userData0.breakable : false;
+				const breakable1 = userData1 ? userData1.breakable : false;
+
+				const collided0 = userData0 ? userData0.collided : false;
+				const collided1 = userData1 ? userData1.collided : false;
+
+				if ( ( ! breakable0 && ! breakable1 ) || ( collided0 && collided1 ) ) {
+
+					continue;
+
+				}
+
+				let contact = false;
+				let maxImpulse = 0;
+				for ( let j = 0, jl = contactManifold.getNumContacts(); j < jl; j ++ ) {
+
+					const contactPoint = contactManifold.getContactPoint( j );
+
+					if ( contactPoint.getDistance() < 0 ) {
+
+						contact = true;
+						const impulse = contactPoint.getAppliedImpulse();
+
+						if ( impulse > maxImpulse ) {
+
+							maxImpulse = impulse;
+							const pos = contactPoint.get_m_positionWorldOnB();
+							const normal = contactPoint.get_m_normalWorldOnB();
+							impactPoint.set( pos.x(), pos.y(), pos.z() );
+							impactNormal.set( normal.x(), normal.y(), normal.z() );
+
+						}
+
+						break;
+
+					}
+
+				}
+
+				// If no point has contact, abort
+				if ( ! contact ) continue;
+
+				// Subdivision
+
+				const fractureImpulse = 325;
+
+				if ( breakable0 && ! collided0 && maxImpulse > fractureImpulse ) {
+
+					const debris = convexBreaker.subdivideByImpact( threeObject0, impactPoint, impactNormal, 1, 2, 1.5 );
+
+					const numObjects = debris.length;
+					for ( let j = 0; j < numObjects; j ++ ) {
+
+						const vel = rb0.getLinearVelocity();
+						const angVel = rb0.getAngularVelocity();
+						const fragment = debris[ j ];
+						fragment.userData.velocity.set( vel.x(), vel.y(), vel.z() );
+						fragment.userData.angularVelocity.set( angVel.x(), angVel.y(), angVel.z() );
+
+						createDebrisFromBreakableObject( fragment );
+
+					}
+
+					objectsToRemove[ numObjectsToRemove ++ ] = threeObject0;
+					userData0.collided = true;
+
+				}
+
+				if ( breakable1 && ! collided1 && maxImpulse > fractureImpulse ) {
+
+					const debris = convexBreaker.subdivideByImpact( threeObject1, impactPoint, impactNormal, 1, 2, 1.5 );
+
+					const numObjects = debris.length;
+					for ( let j = 0; j < numObjects; j ++ ) {
+
+						const vel = rb1.getLinearVelocity();
+						const angVel = rb1.getAngularVelocity();
+						const fragment = debris[ j ];
+						fragment.userData.velocity.set( vel.x(), vel.y(), vel.z() );
+						fragment.userData.angularVelocity.set( angVel.x(), angVel.y(), angVel.z() );
+
+						createDebrisFromBreakableObject( fragment );
+
+					}
+
+					objectsToRemove[ numObjectsToRemove ++ ] = threeObject1;
+					userData1.collided = true;
+
+				}
+
+			}
+
+			for ( let i = 0; i < numObjectsToRemove; i ++ ) {
+
+				removeDebris( objectsToRemove[ i ] );
+
+			}
+
+			numObjectsToRemove = 0;
+	}
+
+//MOVEMENT
+function setupEventHandlers(){
+
+    window.addEventListener( 'keydown', handleKeyDown, false);
+    window.addEventListener( 'keyup', handleKeyUp, false);
+
+}
+
+
+function handleKeyDown(event){
+    let keyCode = event.keyCode;
+
+    switch(keyCode){
+
+        case 87: //W: FORWARD
+            moveDirection.forward = 1
+            break;
+
+        case 83: //S: BACK
+            moveDirection.back = 1
+            break;
+
+        case 65: //A: LEFT
+            moveDirection.left = 1
+            break;
+
+        case 68: //D: RIGHT
+            moveDirection.right = 1
+            break;
+
+    }
+}
+
+
+function handleKeyUp(event){
+    let keyCode = event.keyCode;
+
+    switch(keyCode){
+        case 87: //FORWARD
+            moveDirection.forward = 0
+            break;
+
+        case 83: //BACK
+            moveDirection.back = 0
+            break;
+
+        case 65: //LEFT
+            moveDirection.left = 0
+            break;
+
+        case 68: //RIGHT
+            moveDirection.right = 0
+            break;
+
+    }
+
+}
+	function createDebrisFromBreakableObject( object ) {
+
+		object.castShadow = true;
+		object.receiveShadow = true;
+
+		const shape = createConvexHullPhysicsShape( object.geometry.attributes.position.array );
+		shape.setMargin( margin );
+
+		const body = createRigidBody( object, shape, object.userData.mass, null, null, object.userData.velocity, object.userData.angularVelocity );
+
+		console.log('object: ', object)
+		// Set pointer back to the three object only in the debris objects
+		const btVecUserData = new Ammo.btVector3( 0, 0, 0 );
+		btVecUserData.threeObject = object;
+		body.setUserPointer( btVecUserData );
+
+	}
+
+	function removeDebris( object ) {
+
+		scene.remove( object );
+
+	physicsWorld.removeRigidBody( object.userData.physicsBody );
+
+	}
+
+	function createConvexHullPhysicsShape( coords ) {
+
+		const shape = new Ammo.btConvexHullShape();
+
+		for ( let i = 0, il = coords.length; i < il; i += 3 ) {
+
+			tempBtVec3_1.setValue( coords[ i ], coords[ i + 1 ], coords[ i + 2 ] );
+			const lastOne = ( i >= ( il - 3 ) );
+			shape.addPoint( tempBtVec3_1, lastOne );
+
+		}
+
+		return shape;
+
+	}
+
+
+function moveBall(){
+
+    let scalingFactor = 40;
+
+    let moveX =  moveDirection.right - moveDirection.left;
+    let moveZ =  moveDirection.back - moveDirection.forward;
+    let moveY =  0;
+
+    if( moveX == 0 && moveY == 0 && moveZ == 0) return;
+
+    let resultantImpulse = new Ammo.btVector3( moveX, moveY, moveZ )
+    resultantImpulse.op_mul(scalingFactor);
+		let physicsBody = modelObject.userData.physicsBody;
+		physicsBody.setLinearVelocity( resultantImpulse );
+}
+export { initPhysics, createObjects, initInput, updatePhysics, processClick, updateVertices}

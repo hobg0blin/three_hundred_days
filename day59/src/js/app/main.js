@@ -8,7 +8,6 @@ import {createRenderer} from '../components/Three/renderer.js'
 import { createFog} from '../components/Three/fog.js'
 import {createControls, addToGUI} from '../components/Three/controls.js'
 import { getRandomInt} from '../utils/RandomInt.js'
-import {initPhysics, createObjects, initInput, updatePhysics, processClick, updateVertices} from '../components/Three/Physics/PhysicsUtils.js'
 
 const clock = new THREE.Clock()
 let mouse = new THREE.Vector2()
@@ -20,21 +19,11 @@ export default class Texture {
       this.render = this.render.bind(this) //bind to class instead of window object
       this.setup = this.setup.bind(this)
       this.addObjects = this.addObjects.bind(this)
-      this.initPhysics = initPhysics.bind(this)
-      this.createObjects = createObjects.bind(this)
-      this.initInput = initInput.bind(this)
-      this.updatePhysics = updatePhysics.bind(this)
-
         // set up scene
       Ammo().then(AmmoLib => {
         Ammo = AmmoLib
         this.setup()
         this.addObjects()
-        this.initPhysics()
-        this.createObjects()
-        this.initInput()
-        this.createObjects()
-
         this.render()
       })
 
@@ -127,7 +116,6 @@ setup() {
         let range = 1
         this.renderer.setAnimationLoop(() => {
         const xSpd = time *= 0.00065
-        this.updatePhysics()
 
         for (let globe of this.globes) {
          let elapsedTime = clock.getElapsedTime() * globe.orbitSpeed

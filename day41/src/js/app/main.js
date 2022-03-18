@@ -87,7 +87,7 @@ setup() {
 //            console.log('camera pos: ', this.camera.position)
 
             this.updatePhysics(clock.getDelta())
-            this.controls.update()
+//            this.controls.update()
 
     if (this.anim != undefined) {
             this.mixer.update(clock.getDelta())
