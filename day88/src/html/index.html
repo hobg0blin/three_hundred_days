@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+
+    <meta charset="UTF-8">
+    <style> canvas{ width: 100%; height: 100%; background-color: white }</style>
+       <script src="js/ammo.js"></script>
+
+ <script type="x-shader/x-vertex" id="vertexShader">
+        uniform float offset;
+        uniform float globalTime;
+        uniform vec3 gravity;
+
+        varying vec2 vTexCoord;
+        varying vec3 vNorm;
+
+        const float spacing = 1.0;
+
+        void main()
+        {
+            // Calculate the effect of gravity and wind on the fur.
+            vec3 displacement = gravity + vec3(
+                sin(globalTime+position.x*0.05)*0.3,
+                cos(globalTime*0.7+position.y*0.04)*0.3,
+                sin(globalTime*0.7+position.y*0.04)*0.3
+            );
+            //displacement = vec3(0,0,0);
+            vec3 aNorm = normal;
+            aNorm.xyz += displacement*pow(offset, 2.0);
+
+            // Calculate distance from original mesh.
+            vec3 point = position.xyz + (normalize(aNorm)*offset*spacing);
+
+            vNorm = normalize(normal*aNorm);
+            vTexCoord = uv;//*20.0;
+
+            vec4 modelViewPosition = modelViewMatrix * vec4(point, 1.0);
+
+            gl_Position = projectionMatrix * modelViewPosition;
+        }
+
+    </script>
+		<script id="fragmentShader" type="x-shader/x-fragment">
+
+    uniform float offset;
+            uniform sampler2D hairMap;
+            uniform sampler2D colorMap;
+            uniform vec3 color;
+    
+            varying vec2 vTexCoord;
+            varying vec3 vNorm;
+    
+            void main()
+            {
+                // Get hair properties and color from textures.
+                vec4 hairProperties = texture2D(hairMap, vec2(vTexCoord.s, vTexCoord.t));
+                vec4 hairColor = texture2D(colorMap, vec2(vTexCoord.s, vTexCoord.t));
+
+                // Discard fragments that we shouldn't see.
+                if (hairProperties.a <= 0.0 || hairProperties.g < offset)
+                {
+                    discard;
+                }
+
+                float shadow = mix(0.0, hairProperties.b * 1.2, offset);
+                vec3 light = vec3(0.9,1.0,0.3);
+                float diffuse = pow(max(0.25, dot(vNorm.xyz, light))*2.75, 1.4);
+
+                gl_FragColor = vec4(color * hairColor.xyz * diffuse * shadow, 1.1-offset);
+            }
+		</script>
+
+
+        <%= htmlWebpackPlugin.tags.headTags %>
+    <title><%= htmlWebpackPlugin.options.title %></title>
+  </head>
+
+  <body id="root">
+    <%= htmlWebpackPlugin.tags.bodyTags %>
+  </body>
+</html>

@@ -6,16 +6,14 @@ let loader = new FontLoader()
 let currentGoalColor = new Color
 let currentColor = new Color
 
-function createText(text, font) {
+function createText(text, font, mat) {
     font = loader.parse(font)
-    console.log('font: ', font)
     const geo = new TextGeometry(text, {font: font})
     geo.center()
   geo.scale(0.2, 0.2, 0.2)
     geo.attributes.position.array.needsUpdate = true
     geo.computeVertexNormals()
-    const material = new MeshPhongMaterial({color: 'hotpink'})
-    return new Mesh(geo, material)
+    return new Mesh(geo, mat)
 }
 function lerpColor(textObj, time) {
     if (Math.round(textObj.material.color.r*100)/100 == Math.round(currentGoalColor.r*100)/100 || time == 20){
