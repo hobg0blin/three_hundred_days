@@ -22,8 +22,8 @@ function createFloor(options) {
         floorMesh.receiveShadow = true
         floorMesh.castShadow = true
         floorMesh.name = "floor"
-        floorMesh.rotation.x = -Math.PI /2
-        return floorMesh
+floor.geometry.rotateX(- Math.PI/2)
+return floorMesh
 
 
     }
