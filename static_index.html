@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>100 Days of Three.js</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #111;
+      color: #eee;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 2rem;
+      font-size: 2rem;
+      font-weight: 300;
+      letter-spacing: 0.1em;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 0.75rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .grid a {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.25rem 0.5rem;
+      background: #222;
+      color: #ccc;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: background 0.15s, color 0.15s;
+    }
+    .grid a:hover {
+      background: #444;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <h1>100 Days of Three.js</h1>
+  <div class="grid">
+    <script>
+      for (let i = 1; i <= 100; i++) {
+        document.write('<a href="day' + i + '/index.html">Day ' + i + '</a>');
+      }
+    </script>
+  </div>
+</body>
+</html>

@@ -30,7 +30,7 @@
     "natural": "^5.1.13",
     "os": "^0.1.2",
     "path-browserify": "^1.0.1",
-    "postcss": "^8.4.5",
+    "postcss": "8.4.31",
     "postcss-cli": "^9.1.0",
     "process": "^0.11.10",
     "randomcolor": "^0.6.2",
@@ -42,6 +42,7 @@
     "wordnet-db": "^3.1.14"
   },
   "devDependencies": {
+    "postcss": "8.4.31",
     "@babel/core": "^7.13.10",
     "@babel/preset-env": "^7.16.11",
     "@babel/preset-react": "^7.16.7",
@@ -52,7 +53,7 @@
     "eslint": "^7.22.0",
     "html-webpack-plugin": "^5.3.1",
     "mini-css-extract-plugin": "^1.3.9",
-    "node-sass": "^7.0.1",
+    "sass": "^1.49.0",
     "npm-run-all": "^4.1.5",
     "optimize-css-assets-webpack-plugin": "^5.0.4",
     "postcss-loader": "^5.2.0",
