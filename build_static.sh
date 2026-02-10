@@ -4,9 +4,15 @@
 #
 # Output structure:
 #   static/
-#     index.html          (landing page)
-#     day1/index.html     (sketch 1)
-#     day2/index.html     (sketch 2)
+#     index.html              (landing page)
+#     shared/                 (deduplicated assets)
+#       js/ammo.js, dat.gui.min.js, rStats.js, rStats.extras.js
+#       fonts/*.typeface.json
+#       models/               (merged from all days)
+#       textures/             (merged from all days)
+#       studio-bg.jpg, hank.jpg, thomas.png, meow_1.wav, meow_2.wav
+#     day1/index.html         (sketch 1 - references ../shared/)
+#     day2/index.html         (sketch 2)
 #     ...
 #
 # Usage: ./build_static.sh [start_day] [end_day]
@@ -21,6 +27,7 @@ export NODE_OPTIONS="--openssl-legacy-provider"
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 STATIC_DIR="$ROOT_DIR/static"
 LOG_DIR="$ROOT_DIR/build_logs"
+SHARED_DIR="$STATIC_DIR/shared"
 
 START_DAY="${1:-1}"
 END_DAY="${2:-100}"
@@ -196,6 +203,202 @@ build_day() {
   return 0
 }
 
+# =============================================================================
+# SHARED ASSET DEDUPLICATION
+# =============================================================================
+# After all days are built, move common assets to shared/ and update paths
+# in the built HTML/JS output. This reduces ~7.8GB to ~800MB.
+
+dedup_shared_assets() {
+  log "Starting shared asset deduplication..."
+
+  rm -rf "$SHARED_DIR"
+  mkdir -p "$SHARED_DIR/js" "$SHARED_DIR/fonts" "$SHARED_DIR/models" "$SHARED_DIR/textures"
+
+  # -------------------------------------------------------------------------
+  # 1. Populate shared/ from the most complete day (day100)
+  # -------------------------------------------------------------------------
+  local ref_day="$STATIC_DIR/day100"
+
+  # JS libraries (ammo.js, dat.gui, rStats)
+  for jsfile in ammo.js dat.gui.min.js rStats.js rStats.extras.js; do
+    if [ -f "$ref_day/js/$jsfile" ]; then
+      cp "$ref_day/js/$jsfile" "$SHARED_DIR/js/$jsfile"
+    fi
+  done
+
+  # Fonts
+  if [ -d "$ref_day/fonts" ]; then
+    cp -r "$ref_day/fonts/"* "$SHARED_DIR/fonts/" 2>/dev/null || true
+  fi
+
+  # Models - merge from all days to get the complete set
+  for day_dir in "$STATIC_DIR"/day*/; do
+    if [ -d "$day_dir/models" ]; then
+      cp -rn "$day_dir/models/"* "$SHARED_DIR/models/" 2>/dev/null || true
+    fi
+  done
+
+  # Textures - merge from all days
+  for day_dir in "$STATIC_DIR"/day*/; do
+    if [ -d "$day_dir/textures" ]; then
+      cp -rn "$day_dir/textures/"* "$SHARED_DIR/textures/" 2>/dev/null || true
+    fi
+  done
+
+  # Root-level shared files
+  for rootfile in studio-bg.jpg hank.jpg thomas.png meow_1.wav meow_2.wav; do
+    for day_dir in "$STATIC_DIR"/day*/; do
+      if [ -f "$day_dir/$rootfile" ]; then
+        cp "$day_dir/$rootfile" "$SHARED_DIR/$rootfile"
+        break
+      fi
+    done
+  done
+
+  # Early days (1-13) have assets in assets/ subdirectory
+  for day_dir in "$STATIC_DIR"/day{1,2,3,4,5,6,7,8,9,10,11,12,13}/; do
+    if [ -d "$day_dir/assets/models" ]; then
+      cp -rn "$day_dir/assets/models/"* "$SHARED_DIR/models/" 2>/dev/null || true
+    fi
+    if [ -d "$day_dir/assets/textures" ]; then
+      cp -rn "$day_dir/assets/textures/"* "$SHARED_DIR/textures/" 2>/dev/null || true
+    fi
+  done
+
+  # Water textures are also referenced via textures/water/ subpath by THREE.js Water2
+  if [ -d "$SHARED_DIR/textures" ]; then
+    mkdir -p "$SHARED_DIR/textures/water"
+    cp "$SHARED_DIR/textures/Water_"*.jpg "$SHARED_DIR/textures/water/" 2>/dev/null || true
+  fi
+
+  log "Shared directory populated."
+
+  # -------------------------------------------------------------------------
+  # 2. Update paths in each day's HTML and JS, then remove per-day copies
+  # -------------------------------------------------------------------------
+  for day_dir in "$STATIC_DIR"/day*/; do
+    [ -d "$day_dir" ] || continue
+    local dayname
+    dayname=$(basename "$day_dir")
+
+    # --- Fix HTML files: ammo.js script src ---
+    if [ -f "$day_dir/index.html" ]; then
+      sed -i 's|src="js/ammo\.js"|src="../shared/js/ammo.js"|g' "$day_dir/index.html"
+      sed -i 's|src="js/dat\.gui\.min\.js"|src="../shared/js/dat.gui.min.js"|g' "$day_dir/index.html"
+    fi
+
+    # --- Fix JS bundles: asset path replacements ---
+    # Find all JS files in the day dir (bundle.js, main.bundle.js, vendors.bundle.js)
+    for jsfile in "$day_dir"/*.js "$day_dir"/js/*.js; do
+      [ -f "$jsfile" ] || continue
+      local jsbase
+      jsbase=$(basename "$jsfile")
+
+      # Skip shared libraries themselves
+      case "$jsbase" in
+        ammo.js|dat.gui.min.js|rStats.js|rStats.extras.js) continue ;;
+      esac
+
+      # Model paths (both quote styles)
+      # "./models/" or "models/" or "/models/" → "../shared/models/"
+      sed -i \
+        -e 's|"\./models/|"../shared/models/|g' \
+        -e "s|'\\./models/|'../shared/models/|g" \
+        -e 's|"/models/|"../shared/models/|g' \
+        -e "s|'/models/|'../shared/models/|g" \
+        -e 's|"models/|"../shared/models/|g' \
+        -e "s|'models/|'../shared/models/|g" \
+        "$jsfile"
+
+      # Early-day asset paths: "./assets/models/" and "./assets/textures/"
+      sed -i \
+        -e 's|"\./assets/models/|"../shared/models/|g' \
+        -e "s|'\\./assets/models/|'../shared/models/|g" \
+        -e 's|"\./assets/textures/|"../shared/textures/|g' \
+        -e "s|'\\./assets/textures/|'../shared/textures/|g" \
+        "$jsfile"
+
+      # Texture paths
+      sed -i \
+        -e 's|"textures/|"../shared/textures/|g' \
+        -e "s|'textures/|'../shared/textures/|g" \
+        -e 's|"\./textures/|"../shared/textures/|g' \
+        -e "s|'\\./textures/|'../shared/textures/|g" \
+        "$jsfile"
+
+      # Font paths
+      sed -i \
+        -e 's|"fonts/|"../shared/fonts/|g' \
+        -e "s|'fonts/|'../shared/fonts/|g" \
+        -e 's|"\./fonts/|"../shared/fonts/|g' \
+        -e "s|'\\./fonts/|'../shared/fonts/|g" \
+        "$jsfile"
+
+      # Root-level image/audio assets (exact matches to avoid false positives)
+      sed -i \
+        -e 's|"studio-bg\.jpg"|"../shared/studio-bg.jpg"|g' \
+        -e "s|'studio-bg\\.jpg'|'../shared/studio-bg.jpg'|g" \
+        -e 's|"\./studio-bg\.jpg"|"../shared/studio-bg.jpg"|g' \
+        -e "s|'\\./studio-bg\\.jpg'|'../shared/studio-bg.jpg'|g" \
+        -e 's|"hank\.jpg"|"../shared/hank.jpg"|g' \
+        -e "s|'hank\\.jpg'|'../shared/hank.jpg'|g" \
+        -e 's|"\./hank\.jpg"|"../shared/hank.jpg"|g' \
+        -e "s|'\\./hank\\.jpg'|'../shared/hank.jpg'|g" \
+        -e 's|"thomas\.png"|"../shared/thomas.png"|g' \
+        -e "s|'thomas\\.png'|'../shared/thomas.png'|g" \
+        -e 's|"meow_1\.wav"|"../shared/meow_1.wav"|g' \
+        -e "s|'meow_1\\.wav'|'../shared/meow_1.wav'|g" \
+        -e 's|"meow_2\.wav"|"../shared/meow_2.wav"|g' \
+        -e "s|'meow_2\\.wav'|'../shared/meow_2.wav'|g" \
+        "$jsfile"
+
+      # stone-granite texture referenced at root level in some days
+      sed -i \
+        -e 's|"stone-granite-1-TEX\.png"|"../shared/textures/stone-granite-1-TEX.png"|g' \
+        -e "s|'stone-granite-1-TEX\\.png'|'../shared/textures/stone-granite-1-TEX.png'|g" \
+        "$jsfile"
+    done
+
+    # --- Remove per-day copies of shared assets ---
+    rm -rf "$day_dir/models" 2>/dev/null || true
+    rm -rf "$day_dir/textures" 2>/dev/null || true
+    rm -rf "$day_dir/fonts" 2>/dev/null || true
+    rm -rf "$day_dir/assets" 2>/dev/null || true
+    rm -f "$day_dir/studio-bg.jpg" 2>/dev/null || true
+    rm -f "$day_dir/hank.jpg" 2>/dev/null || true
+    rm -f "$day_dir/thomas.png" 2>/dev/null || true
+    rm -f "$day_dir/meow_1.wav" 2>/dev/null || true
+    rm -f "$day_dir/meow_2.wav" 2>/dev/null || true
+    rm -f "$day_dir/stone-granite-1-TEX.png" 2>/dev/null || true
+
+    # Remove per-day JS libraries (now in shared/js/)
+    rm -f "$day_dir/js/ammo.js" 2>/dev/null || true
+    rm -f "$day_dir/js/dat.gui.min.js" 2>/dev/null || true
+    rm -f "$day_dir/js/rStats.js" 2>/dev/null || true
+    rm -f "$day_dir/js/rStats.extras.js" 2>/dev/null || true
+
+    # Remove empty js/ and css/ dirs
+    rmdir "$day_dir/js" 2>/dev/null || true
+    rmdir "$day_dir/css" 2>/dev/null || true
+
+    log "$dayname: deduplicated"
+  done
+
+  # Report savings
+  local shared_size
+  shared_size=$(du -sh "$SHARED_DIR" | cut -f1)
+  local total_size
+  total_size=$(du -sh "$STATIC_DIR" | cut -f1)
+  log "Deduplication complete."
+  log "  Shared assets: $shared_size"
+  log "  Total static output: $total_size"
+}
+
+# =============================================================================
+# MAIN
+# =============================================================================
+
 # Main build loop
 log "Starting static build for days $START_DAY through $END_DAY"
 log "Output directory: $STATIC_DIR"
@@ -210,7 +413,7 @@ for day_num in $(seq "$START_DAY" "$END_DAY"); do
   echo ""
 done
 
-# Print summary
+# Print build summary
 echo "========================================="
 echo "BUILD SUMMARY"
 echo "========================================="
@@ -226,5 +429,17 @@ if [ ${#FAILURES[@]} -gt 0 ]; then
   echo ""
   echo "Check build logs in $LOG_DIR/ for details."
 fi
+echo ""
+
+# Deduplicate shared assets
+if [ "$START_DAY" -eq 1 ] && [ "$END_DAY" -eq 100 ]; then
+  dedup_shared_assets
+fi
+
+# Copy landing page
+if [ -f "$ROOT_DIR/static_index.html" ]; then
+  cp "$ROOT_DIR/static_index.html" "$STATIC_DIR/index.html"
+fi
+
 echo ""
 echo "Static files are in: $STATIC_DIR/"
